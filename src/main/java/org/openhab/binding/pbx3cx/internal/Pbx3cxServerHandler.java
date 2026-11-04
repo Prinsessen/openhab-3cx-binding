@@ -102,6 +102,8 @@ public class Pbx3cxServerHandler extends BaseBridgeHandler {
     private int missedCountToday = 0;
     private int totalCallsToday = 0;
     private int consecutiveErrors = 0;
+    /** While polls keep failing, one warning per this many (150 x 2 s = 5 min at the default interval). */
+    private static final int STILL_FAILING_EVERY = 150;
 
     // Recent calls history (last N completed calls)
     private final LinkedList<JsonObject> recentCalls = new LinkedList<>();
@@ -277,6 +279,9 @@ public class Pbx3cxServerHandler extends BaseBridgeHandler {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
                         "Poll errors: " + e.getMessage());
                 updateState(CHANNEL_SYSTEM_STATUS, new StringType("ERROR"));
+            } else if (consecutiveErrors % STILL_FAILING_EVERY == 0) {
+                // the one warning above was all an outage of 2026-11-03 left in the log for 16 min
+                logger.warn("3CX still unreachable after {} polls: {}", consecutiveErrors, e.getMessage());
             }
         }
     }

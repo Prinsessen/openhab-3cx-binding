@@ -17,12 +17,17 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 
 import javax.net.ssl.SSLContext;
@@ -60,7 +65,23 @@ public class Pbx3cxApiClient {
     private final String baseUrl;
     private final String username;
     private final String password;
-    private final HttpClient httpClient;
+    private final boolean verifySsl;
+
+    /**
+     * The whole exchange - connect, headers AND body - must finish within this. The request's own
+     * {@code timeout()} ends at the response headers: on 2026-11-03 a FortiGate restart left a reply
+     * whose body never came, and the trunk and ring-group polls waited in {@code send()} for ~15 min
+     * (the kernel's retransmissions, tcp_retries2) while every other poll failed with "HTTP connect
+     * timed out" on the same client until those connections died. See
+     * Pbx3cxApiClientTimeoutTest.
+     */
+    static final Duration CALL_DEADLINE = Duration.ofSeconds(15);
+
+    /** A hung client is replaced at most this often, so an outage does not build one per poll. */
+    private static final Duration RENEW_AT_MOST_EVERY = Duration.ofSeconds(10);
+
+    private volatile HttpClient httpClient;
+    private Instant lastRenewal = Instant.EPOCH;
 
     private @Nullable String accessToken;
     private @Nullable String refreshToken;
@@ -73,10 +94,14 @@ public class Pbx3cxApiClient {
         this.baseUrl = String.format("https://%s:%d", config.hostname, config.port);
         this.username = config.username;
         this.password = config.password;
+        this.verifySsl = config.verifySsl;
+        this.httpClient = newHttpClient();
+    }
 
+    private HttpClient newHttpClient() {
         HttpClient.Builder builder = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10));
 
-        if (!config.verifySsl) {
+        if (!verifySsl) {
             try {
                 SSLContext sslContext = createTrustAllSslContext();
                 builder.sslContext(sslContext);
@@ -85,7 +110,53 @@ public class Pbx3cxApiClient {
             }
         }
 
-        this.httpClient = builder.build();
+        return builder.build();
+    }
+
+    /**
+     * Send with a deadline on the whole exchange. When it passes, or the client's own timeouts
+     * fire, the exchange is cancelled and the client is replaced: its connections may be dead
+     * without either end knowing, and only a new client is sure not to reuse one. The old client
+     * is shut down, which aborts what still hangs on it and frees the polling threads.
+     */
+    private HttpResponse<String> exchange(HttpRequest request) throws IOException, InterruptedException {
+        HttpClient client = httpClient;
+        CompletableFuture<HttpResponse<String>> future = client.sendAsync(request,
+                HttpResponse.BodyHandlers.ofString());
+        try {
+            return future.get(CALL_DEADLINE.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            renew(client);
+            throw new HttpTimeoutException(
+                    "no complete reply within " + CALL_DEADLINE.toSeconds() + " s, connection dropped");
+        } catch (InterruptedException e) {
+            future.cancel(true);
+            throw e;
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof HttpTimeoutException) {
+                renew(client);
+            }
+            if (cause instanceof IOException io) {
+                throw io;
+            }
+            throw new IOException(cause != null ? cause.getMessage() : e.getMessage(), cause);
+        }
+    }
+
+    private synchronized void renew(HttpClient hung) {
+        if (httpClient != hung) {
+            return; // another poll replaced it already
+        }
+        Instant now = Instant.now();
+        if (now.isBefore(lastRenewal.plus(RENEW_AT_MOST_EVERY))) {
+            return;
+        }
+        lastRenewal = now;
+        httpClient = newHttpClient();
+        hung.shutdownNow();
+        logger.debug("3CX HTTP client replaced after a timeout");
     }
 
     /**
@@ -110,7 +181,7 @@ public class Pbx3cxApiClient {
                     .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
                     .header("Content-Type", "application/json").timeout(Duration.ofSeconds(10)).build();
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = exchange(request);
 
             if (response.statusCode() != 200) {
                 logger.error("3CX auth failed: HTTP {}: {}", response.statusCode(), truncate(response.body(), 200));
@@ -425,7 +496,7 @@ public class Pbx3cxApiClient {
         HttpRequest request = HttpRequest.newBuilder().uri(URI.create(baseUrl + path)).GET()
                 .header("Authorization", "Bearer " + accessToken).timeout(Duration.ofSeconds(5)).build();
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = exchange(request);
 
         if (response.statusCode() == 401) {
             // Token expired mid-flight, force re-auth on next call
@@ -459,6 +530,7 @@ public class Pbx3cxApiClient {
         } finally {
             tokenLock.unlock();
         }
+        httpClient.shutdownNow();
     }
 
     private static @Nullable String getJsonString(JsonObject obj, String key) {
