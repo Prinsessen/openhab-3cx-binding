@@ -20,7 +20,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -69,9 +68,8 @@ public class BaresipSipClient {
     // Only one baresip instance at a time
     private static final ReentrantLock CALL_LOCK = new ReentrantLock();
 
-    // Alert type → WAV filename mapping
-    private static final Map<String, String> ALERT_AUDIO = Map.of("towing", "towing_alert.wav", "unplug",
-            "unplug_alert.wav", "generic", "towing_alert.wav");
+    // Default fallback WAV when type-specific file is missing
+    private static final String FALLBACK_AUDIO = "towing_alert.wav";
 
     /** Result constants for channel state updates. */
     public static final String RESULT_CONFIRMED = "CONFIRMED";
@@ -213,13 +211,17 @@ public class BaresipSipClient {
     }
 
     private String executeAlarmCall(String alertType, @Nullable String destination) {
-        // Resolve audio file from alert type
-        String audioFile = ALERT_AUDIO.getOrDefault(alertType, "towing_alert.wav");
-
-        Path audioPath = alertAudioPath.resolve(audioFile);
+        // Dynamically resolve audio: {alertType}_alert.wav, fallback to towing_alert.wav
+        String primaryFile = alertType + "_alert.wav";
+        Path audioPath = alertAudioPath.resolve(primaryFile);
         if (!Files.exists(audioPath)) {
-            logger.error("Audio file not found: {}", audioPath);
-            return RESULT_ERROR;
+            logger.warn("Audio file not found for type '{}': {}, trying fallback: {}", alertType, audioPath,
+                    FALLBACK_AUDIO);
+            audioPath = alertAudioPath.resolve(FALLBACK_AUDIO);
+            if (!Files.exists(audioPath)) {
+                logger.error("Fallback audio file also not found: {}", audioPath);
+                return RESULT_ERROR;
+            }
         }
 
         // Build destination list
