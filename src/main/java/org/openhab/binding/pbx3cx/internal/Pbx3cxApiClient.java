@@ -455,7 +455,7 @@ public class Pbx3cxApiClient {
      * actual SrcCallerNumber for inbound calls.
      *
      * @param trunkDn the trunk DN (e.g. "10002")
-     * @return the external caller number (e.g. "22162460"), or null if not found
+     * @return the external caller number (e.g. "12345678"), or null if not found
      */
     public @Nullable String resolveExternalCallerNumber(String trunkDn) {
         try {

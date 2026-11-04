@@ -68,7 +68,7 @@ end
 
 
 // ─── VIP Caller Flash ──────────────────────────────────────────────────────
-// Flash a specific light red/blue when a VIP caller (e.g. "22162460") rings.
+// Flash a specific light red/blue when a VIP caller (e.g. "12345678") rings.
 // Stops when call is answered (active) or ends (idle).
 // Uses force-clear-then-set pattern on callerNumber for reliable triggering.
 
@@ -78,7 +78,7 @@ when
 then
     val callerNumber = PBX_Caller_Number.state.toString
     if (callerNumber == "NULL" || callerNumber == "UNDEF" || callerNumber == "") return;
-    if (!callerNumber.contains("22162460")) return;
+    if (!callerNumber.contains("12345678")) return;
 
     // Prevent duplicate timers
     if (vipFlashTimer !== null) return;

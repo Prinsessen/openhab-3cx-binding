@@ -371,7 +371,7 @@ when
     Item PBX_Caller_Number changed
 then
     val callerNumber = PBX_Caller_Number.state.toString
-    if (callerNumber.contains("22162460")) {  // VIP number
+    if (callerNumber.contains("12345678")) {  // VIP number
         if (callerFlashTimer !== null) return;
         callerFlashRed = true
         callerLightWasOff = (My_Light_Color.state.toString.endsWith(",0"))
@@ -568,7 +568,7 @@ For inbound calls via SIP trunks, 3CX's `ActiveCalls` API sometimes returns only
 
 1. When a new inbound trunk call is detected, the binding queries `CallHistoryView` via OData to look up the `SrcCallerNumber` field
 2. If found, the resolved external number is used instead of the DID
-3. Falls back to extracting the number from the trunk name parentheses (e.g., `"1TEL.DK Trunk (22162460)"` → `22162460`)
+3. Falls back to extracting the number from the trunk name parentheses (e.g., `"1TEL.DK Trunk (12345678)"` → `12345678`)
 
 ### Caller Number Lifecycle
 
