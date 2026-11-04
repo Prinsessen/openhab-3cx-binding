@@ -69,10 +69,10 @@ A comprehensive openHAB binding for **3CX PBX V20** that provides real-time call
 
 ### Pre-built JAR (Recommended)
 
-1. Copy the JAR file to your openHAB addons folder:
+1. Download the JAR of the latest release from the [Releases page](https://github.com/Prinsessen/openhab-3cx-binding/releases/latest) (for example `org.openhab.binding.pbx3cx-1.1.0.jar`) and copy it to your openHAB addons folder, after removing an older 3CX JAR:
 
 ```bash
-sudo cp org.openhab.binding.pbx3cx-5.2.0-SNAPSHOT.jar /usr/share/openhab/addons/
+sudo cp org.openhab.binding.pbx3cx-1.1.0.jar /usr/share/openhab/addons/
 ```
 
 2. OpenHAB will automatically load the binding within ~20 seconds.

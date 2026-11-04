@@ -1,4 +1,4 @@
-# Build artifacts (keep the pre-built JAR for convenience)
+# Build artifacts
 target/
 
 # IDE files
@@ -15,3 +15,6 @@ Thumbs.db
 # Never commit credentials
 secrets/
 *.secret
+
+# release JARs live on the GitHub Releases page, not in the tree
+*.jar
