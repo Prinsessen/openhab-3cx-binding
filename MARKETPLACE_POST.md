@@ -4,11 +4,15 @@
 | type | binding |
 | author | Nanna Agesen |
 | version range | \[5.0.0;6.0.0) |
-| download | [org.openhab.binding.pbx3cx-1.1.0.jar](https://github.com/Prinsessen/openhab-3cx-binding/releases/download/v1.1.0/org.openhab.binding.pbx3cx-1.1.0.jar) |
+| download | [org.openhab.binding.pbx3cx-1.1.1.jar](https://github.com/Prinsessen/openhab-3cx-binding/releases/download/v1.1.1/org.openhab.binding.pbx3cx-1.1.1.jar) |
 
 # 3CX PBX Binding
 
 A comprehensive openHAB binding for **3CX PBX V20** that provides real-time call monitoring, extension presence tracking, ring group/queue management, SIP alarm calls, and a live HTML dashboard — all via the 3CX xAPI (REST + JWT).
+
+## What is new in 1.1.1
+
+* **Starts on openHAB 5.3.** 1.1.0 imported `javax.servlet` for a CRM/CFD webhook servlet that was never registered, so it does not start on openHAB 5.3 (Jetty 12). The dead servlet is removed; the JAR needs no servlet API and no Jetty, and the same JAR is meant for 5.2 and 5.3. Nothing you use changes: the `webhookPort` parameter is ignored and can be removed from your bridge.
 
 ## What is new in 1.1.0
 
@@ -30,7 +34,6 @@ A comprehensive openHAB binding for **3CX PBX V20** that provides real-time call
 * **Alert types** — Towing/unplug alerts (or any type with its own WAV file) with multi-number sequential retry
 * **Trunk monitoring** — SIP trunk online/offline status
 * **VoiceMail detection** — Recognizes voicemail pickups (not counted as answered)
-* **Webhook receiver** — Optional 3CX CRM/CFD integration webhook listener
 * **Self-signed SSL** — Works with 3CX self-signed certificates
 * **Self-healing connection** — A 15 s deadline on every request and a fresh HTTP client after a timeout, so a dead connection never holds the bridge offline
 
@@ -39,6 +42,7 @@ A comprehensive openHAB binding for **3CX PBX V20** that provides real-time call
 * 3CX PBX V20 with xAPI enabled
 * 3CX user account with admin privileges
 * Network access from openHAB to 3CX webclient port (default 5001)
+* **openHAB 5.3:** not affected by the move to Jetty 12 / Jakarta EE 10 since 1.1.1 - the binding uses no Jetty and no servlet API, and it builds and passes its tests against openHAB 5.3. The 1.1.1 JAR is expected to start on 5.3 unchanged, but this has not yet been confirmed on a live 5.3; reports welcome. 1.1.0 and older do not start on 5.3 (`Unresolved requirement: Import-Package: javax.servlet`).
 * `baresip` installed for SIP/alarm call features (optional)
 
 ## Supported Things
@@ -199,7 +203,7 @@ Requires `sudo apt install baresip` and SIP credentials configured on the bridge
 
 ## Resources
 
-* **Download JAR (v1.1.0):** [org.openhab.binding.pbx3cx-1.1.0.jar](https://github.com/Prinsessen/openhab-3cx-binding/releases/download/v1.1.0/org.openhab.binding.pbx3cx-1.1.0.jar) (77.5 KB)
+* **Download JAR (v1.1.1):** [org.openhab.binding.pbx3cx-1.1.1.jar](https://github.com/Prinsessen/openhab-3cx-binding/releases/download/v1.1.1/org.openhab.binding.pbx3cx-1.1.1.jar) (71.9 KB)
 * **Install:** copy the JAR into the openHAB `addons` folder (`/usr/share/openhab/addons/` on apt installs, `$OPENHAB_HOME/addons/` otherwise); it is picked up without a restart. Remove an older 3CX JAR first.
 * **Source Code:** [github.com/Prinsessen/openhab-3cx-binding](https://github.com/Prinsessen/openhab-3cx-binding)
 * **Full Documentation:** [README.md](https://github.com/Prinsessen/openhab-3cx-binding/blob/main/README.md)

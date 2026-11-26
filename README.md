@@ -27,7 +27,6 @@ A comprehensive openHAB binding for **3CX PBX V20** that provides real-time call
 - [JSON Formats](#json-formats)
 - [Caller ID Resolution](#caller-id-resolution)
 - [Call History Persistence](#call-history-persistence)
-- [Webhook Support](#webhook-support)
 - [SIP / Alarm Calls](#sip--alarm-calls)
 - [Building from Source](#building-from-source)
 - [Architecture](#architecture)
@@ -51,7 +50,6 @@ A comprehensive openHAB binding for **3CX PBX V20** that provides real-time call
 - **VoiceMail detection** — Recognizes voicemail pickups (not counted as answered)
 - **ROUTER resolution** — Handles 3CX ROUTER placeholder in call routing
 - **Auto-discovery** — Extensions discovered automatically from 3CX
-- **Webhook receiver** — Listens for 3CX CRM/CFD integration webhooks
 - **Self-signed SSL** — Works with 3CX self-signed certificates
 
 ---
@@ -59,6 +57,7 @@ A comprehensive openHAB binding for **3CX PBX V20** that provides real-time call
 ## Requirements
 
 - **openHAB** 4.x or 5.x
+- **openHAB 5.3:** not affected by the move to Jetty 12 / Jakarta EE 10 since 1.1.1 - the binding uses no Jetty and no servlet API, and it builds and passes its tests against openHAB 5.3. The 1.1.1 JAR is expected to start on 5.3 unchanged, but this has not yet been confirmed on a live 5.3; reports welcome. 1.1.0 and older do not start on 5.3 (`Unresolved requirement: Import-Package: javax.servlet`).
 - **3CX PBX V20** with xAPI enabled
 - **3CX user account** with admin privileges (typically an extension in the `system_admins` group)
 - Network access from openHAB to 3CX webclient port (default 5001)
@@ -99,7 +98,7 @@ The bridge connects to your 3CX PBX server and polls for call activity.
 | `presenceInterval`     | Integer | No       | 30      | Extension presence polling interval (seconds)            |
 | `trunkInterval`        | Integer | No       | 60      | Trunk status polling interval (seconds)                  |
 | `verifySsl`            | Boolean | No       | true    | Verify SSL certificates (set false for self-signed certs) |
-| `webhookPort`          | Integer | No       | 5002    | CRM/CFD webhook listener port (0 = disabled)             |
+| `webhookPort`          | Integer | No       |         | Not used (the webhook listener was never active; removed in 1.1.1, kept so existing configs stay valid) |
 | `recentCallsMax`       | Integer | No       | 10      | Maximum number of recent calls to keep in history        |
 | `recentMissedCallsMax` | Integer | No       | 10      | Maximum number of missed calls to keep in history        |
 | `sipServer`            | String  | No       |         | SIP server hostname/IP for baresip (enables alarm calls) |
@@ -125,7 +124,6 @@ Bridge pbx3cx:server:main "3CX PBX" [
     presenceInterval=30,
     trunkInterval=60,
     verifySsl=true,
-    webhookPort=0,
     recentCallsMax=20,
     recentMissedCallsMax=20,
     sipServer="192.168.x.x",
@@ -597,18 +595,6 @@ The history size is controlled by the bridge config parameters `recentCallsMax` 
 
 ---
 
-## Webhook Support
-
-The binding includes an optional webhook listener for 3CX CRM/CFD integration:
-
-1. Set `webhookPort` in the bridge config (e.g., `5002`)
-2. Configure 3CX CRM integration to POST to `http://your-openhab:5002/pbx3cx/webhook`
-3. The binding will process incoming webhook events
-
-Set `webhookPort=0` to disable the webhook listener.
-
----
-
 ## SIP / Alarm Calls
 
 The binding includes a native SIP client powered by [baresip](https://github.com/baresip/baresip) for making outbound calls directly from openHAB — no external scripts required.
@@ -724,7 +710,6 @@ org.openhab.binding.pbx3cx/
 │   ├── Pbx3cxRingGroupConfiguration.java
 │   ├── Pbx3cxQueueHandler.java          — Queue child handler
 │   ├── Pbx3cxQueueConfiguration.java
-│   ├── Pbx3cxWebhookServlet.java        — CRM/CFD webhook receiver
 │   ├── TrustAllSslUtil.java             — SSL bypass for self-signed certs
 │   ├── dto/
 │   │   ├── ActiveCall.java              — Active call data model

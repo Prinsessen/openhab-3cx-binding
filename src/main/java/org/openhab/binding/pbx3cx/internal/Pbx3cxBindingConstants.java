@@ -105,7 +105,6 @@ public class Pbx3cxBindingConstants {
     public static final int DEFAULT_POLL_INTERVAL = 2;
     public static final int DEFAULT_PRESENCE_INTERVAL = 30;
     public static final int DEFAULT_TRUNK_INTERVAL = 60;
-    public static final int DEFAULT_WEBHOOK_PORT = 5002;
     public static final int TOKEN_REFRESH_MARGIN_SECONDS = 15;
     public static final int AUTO_IDLE_TIMEOUT_SECONDS = 120;
 }

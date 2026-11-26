@@ -6,7 +6,7 @@
 	https://openhab.org/schemas/thing-description-1.0.0.xsd">
 
 	<!-- ═══════════════════════════════════════════════════════════════════
-		Bridge: 3CX Server (xAPI connection + webhook receiver)
+		Bridge: 3CX Server (xAPI connection)
 		═══════════════════════════════════════════════════════════════════ -->
 	<bridge-type id="server">
 		<label>3CX PBX Server</label>
@@ -84,9 +84,9 @@
 				<default>true</default>
 			</parameter>
 			<parameter name="webhookPort" type="integer" required="false">
-				<label>Webhook Port</label>
-				<description>Port for incoming CRM/CFD webhook listener (0 = disabled)</description>
-				<default>5002</default>
+				<label>Webhook Port (not used)</label>
+				<description>Not used: the webhook listener was removed in 1.1.1. Kept so existing configurations stay valid.</description>
+				<advanced>true</advanced>
 			</parameter>
 			<parameter name="recentCallsMax" type="integer" required="false">
 				<label>Recent Calls Max</label>

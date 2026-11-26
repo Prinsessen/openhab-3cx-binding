@@ -4,6 +4,20 @@ All notable changes to the 3CX PBX Binding are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.1] - 2026-11-26
+
+### Removed
+- **The CRM/CFD webhook servlet, which never ran.** `Pbx3cxWebhookServlet` was never registered with openHAB's HTTP
+  service and nothing opened `webhookPort`, so no webhook ever reached the binding; the README described a feature
+  that did not exist. It was the only code that needed `javax.servlet`, and with it the 1.1.0 JAR does not start on
+  openHAB 5.3 (Jetty 12 / Jakarta EE 10: `Unresolved requirement: Import-Package: javax.servlet`). Removed together
+  with the handler's `handleWebhookEvent`. The `webhookPort` parameter stays (marked "not used") so existing
+  configurations stay valid.
+
+### Added
+- `Pbx3cxNoServletApiTest`: no class of the binding may use the servlet API or Jetty, so one JAR serves openHAB 5.2
+  and 5.3. It fails on 1.1.0 (`Pbx3cxWebhookServlet.class -> javax/servlet`).
+
 ## [1.1.0] - 2026-11-04
 
 ### Fixed
